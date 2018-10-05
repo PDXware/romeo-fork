@@ -20,7 +20,7 @@ defmodule Romeo.Transports.TCP do
 
   @spec connect(Keyword.t) :: {:ok, state} | {:error, any}
   def connect(%Conn{host: host, port: port, socket_opts: socket_opts} = conn) do
-    host = (host || host(conn.jid)) |> to_char_list
+    host = (host || host(conn.jid)) |> to_charlist()
     port = (port || @default_port)
 
     conn = %{conn | host: host, port: port, socket_opts: socket_opts}
@@ -167,7 +167,7 @@ defmodule Romeo.Transports.TCP do
     parser = :fxml_stream.parse(parser, data)
 
     stanza =
-      case receive_stanza do
+      case receive_stanza() do
         :more -> :more
         stanza -> stanza
       end
@@ -213,7 +213,7 @@ defmodule Romeo.Transports.TCP do
       {:tcp_error, ^socket, reason} ->
         {:error, reason}
     after timeout ->
-      Kernel.send(self, {:error, :timeout})
+      Kernel.send(self(), {:error, :timeout})
       conn
     end
   end
@@ -238,7 +238,7 @@ defmodule Romeo.Transports.TCP do
       {:ssl_error, ^socket, reason} ->
         {:error, reason}
     after timeout ->
-      Kernel.send(self, {:error, :timeout})
+      Kernel.send(self(), {:error, :timeout})
       conn
     end
   end
@@ -278,10 +278,10 @@ defmodule Romeo.Transports.TCP do
       :ok ->
         :ok
       {:error, :closed} ->
-        _ = Kernel.send(self, {:tcp_closed, socket})
+        _ = Kernel.send(self(), {:tcp_closed, socket})
         :ok
       {:error, reason} ->
-        _ = Kernel.send(self, {:tcp_error, socket, reason})
+        _ = Kernel.send(self(), {:tcp_error, socket, reason})
         :ok
     end
   end
@@ -290,10 +290,10 @@ defmodule Romeo.Transports.TCP do
       :ok ->
         :ok
       {:error, :closed} ->
-        _ = Kernel.send(self, {:ssl_closed, socket})
+        _ = Kernel.send(self(), {:ssl_closed, socket})
         :ok
       {:error, reason} ->
-        _ = Kernel.send(self, {:ssl_error, socket, reason})
+        _ = Kernel.send(self(), {:ssl_error, socket, reason})
         :ok
     end
   end
