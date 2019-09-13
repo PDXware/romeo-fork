@@ -206,7 +206,12 @@ defmodule Romeo.Transports.TCP do
           conn
         else
           {:ok, conn, stanza} = parse_data(conn, data)
-          fun.(conn, stanza)
+          if whitespace_only?(stanza) do
+              Logger.info fn -> "DX Fixed whitespace bug in recv first head" end
+              conn
+            else
+              fun.(conn, stanza)
+          end
         end
       {:tcp_closed, ^socket} ->
         {:error, :closed}
@@ -231,7 +236,12 @@ defmodule Romeo.Transports.TCP do
           conn
         else
           {:ok, conn, stanza} = parse_data(conn, data)
-          fun.(conn, stanza)
+          if whitespace_only?(stanza) do
+            Logger.info fn -> "DX Fixed whitespace bug in recv second head" end
+            conn
+          else
+            fun.(conn, stanza)
+          end
         end
       {:ssl_closed, ^socket} ->
         {:error, :closed}
@@ -301,5 +311,9 @@ defmodule Romeo.Transports.TCP do
 
   defp host(jid) do
     Romeo.JID.parse(jid).server
+  end
+
+  def stqdebug(msg) do
+    IO.puts("=== [#{inspect self()}] === #{inspect msg}")
   end
 end
