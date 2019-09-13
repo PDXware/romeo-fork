@@ -293,7 +293,8 @@ defmodule Romeo.Transports.TCP do
     {:ok, _conn, _stanza} = parse_data(conn, data)
   end
 
-  defp whitespace_only?(data), do: Regex.match?(~r/^\s+$/, data)
+  defp whitespace_only?(data) when is_binary(data), do: Regex.match?(~r/^\s+$/, data)
+  defp whitespace_only?(data), do: false
 
   defp activate({:gen_tcp, socket}) do
     case :inet.setopts(socket, [active: :once]) do
