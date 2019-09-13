@@ -197,47 +197,65 @@ defmodule Romeo.Transports.TCP do
 
   def recv({:ok, conn}, fun), do: recv(conn, fun)
   def recv(%Conn{socket: {:gen_tcp, socket}, timeout: timeout} = conn, fun) do
+    IO.puts("--- #{__MODULE__}.recv() 1A")
     receive do
       {:xmlstreamelement, stanza} ->
+        IO.puts("--- #{__MODULE__}.recv() 1B")
         fun.(conn, stanza)
       {:tcp, ^socket, data} ->
+        IO.puts("--- #{__MODULE__}.recv() 1C")
         :ok = activate({:gen_tcp, socket})
         if whitespace_only?(data) do
+          IO.puts("--- #{__MODULE__}.recv() 1C - Whitespace")
           conn
         else
+          IO.puts("--- #{__MODULE__}.recv() 1C - ELSE")
           {:ok, conn, stanza} = parse_data(conn, data)
           fun.(conn, stanza)
         end
       {:tcp_closed, ^socket} ->
+        IO.puts("--- #{__MODULE__}.recv() 1 - :tcp_closed")
         {:error, :closed}
       {:tcp_error, ^socket, reason} ->
+        IO.puts("--- #{__MODULE__}.recv() 1 - :error #{inspect reason}")
         {:error, reason}
     after timeout ->
+      IO.puts("--- #{__MODULE__}.recv() 1 - :after timeout")
       Kernel.send(self(), {:error, :timeout})
       conn
     end
   end
+
   def recv(%Conn{socket: {:ssl, socket}, timeout: timeout} = conn, fun) do
+    IO.puts("--- #{__MODULE__}.recv() 2A")
     receive do
       {:xmlstreamelement, stanza} ->
+        IO.puts("--- #{__MODULE__}.recv() 2B")
         fun.(conn, stanza)
       {:ssl, ^socket, " "} ->
+        IO.puts("--- #{__MODULE__}.recv() 2C")
         :ok = activate({:ssl, socket})
         conn
       {:ssl, ^socket, data} ->
+        IO.puts("--- #{__MODULE__}.recv() 2D")
         :ok = activate({:ssl, socket})
 
         if whitespace_only?(data) do
+          IO.puts("--- #{__MODULE__}.recv() 2D Whitespace")
           conn
         else
+          IO.puts("--- #{__MODULE__}.recv() 2D ELSE")
           {:ok, conn, stanza} = parse_data(conn, data)
           fun.(conn, stanza)
         end
       {:ssl_closed, ^socket} ->
+        IO.puts("--- #{__MODULE__}.recv() 2 - :ssl_closed")
         {:error, :closed}
       {:ssl_error, ^socket, reason} ->
+        IO.puts("--- #{__MODULE__}.recv() 2 - :ssl_closed")
         {:error, reason}
     after timeout ->
+      IO.puts("--- #{__MODULE__}.recv() 2 - after timeout")
       Kernel.send(self(), {:error, :timeout})
       conn
     end
