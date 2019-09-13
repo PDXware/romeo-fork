@@ -137,13 +137,13 @@ defmodule Romeo.Transports.TCP do
   end
 
   defp session(%Conn{} = conn) do
-    dbg("#{__MODULE__}.session() A")
+    stqdbg("#{__MODULE__}.session() A")
     stanza = Romeo.Stanza.session
     id = Romeo.XML.attr(stanza, "id")
     xx = xmlel(name: "iq")
-    dbg("  id:     #{inspect id}")
-    dbg("  stanza: #{inspect stanza}")
-    dbg("  xx:     #{inspect xx}")
+    stqdbg("  id:     #{inspect id}")
+    stqdbg("  stanza: #{inspect stanza}")
+    stqdbg("  xx:     #{inspect xx}")
     conn
     |> send(stanza)
     |> recv(fn conn, xmlel(name: "iq") = stanza ->
@@ -201,65 +201,65 @@ defmodule Romeo.Transports.TCP do
 
   def recv({:ok, conn}, fun), do: recv(conn, fun)
   def recv(%Conn{socket: {:gen_tcp, socket}, timeout: timeout} = conn, fun) do
-    dbg("--- #{__MODULE__}.recv() 1A")
+    stqdbg("--- #{__MODULE__}.recv() 1A")
     receive do
       {:xmlstreamelement, stanza} ->
-        dbg("--- #{__MODULE__}.recv() 1B")
+        stqdbg("--- #{__MODULE__}.recv() 1B")
         fun.(conn, stanza)
       {:tcp, ^socket, data} ->
-        dbg("--- #{__MODULE__}.recv() 1C")
+        stqdbg("--- #{__MODULE__}.recv() 1C")
         :ok = activate({:gen_tcp, socket})
         if whitespace_only?(data) do
-          dbg("--- #{__MODULE__}.recv() 1C - Whitespace")
+          stqdbg("--- #{__MODULE__}.recv() 1C - Whitespace")
           conn
         else
-          dbg("--- #{__MODULE__}.recv() 1C - ELSE")
+          stqdbg("--- #{__MODULE__}.recv() 1C - ELSE")
           {:ok, conn, stanza} = parse_data(conn, data)
           fun.(conn, stanza)
         end
       {:tcp_closed, ^socket} ->
-        dbg("--- #{__MODULE__}.recv() 1 - :tcp_closed")
+        stqdbg("--- #{__MODULE__}.recv() 1 - :tcp_closed")
         {:error, :closed}
       {:tcp_error, ^socket, reason} ->
-        dbg("--- #{__MODULE__}.recv() 1 - :error #{inspect reason}")
+        stqdbg("--- #{__MODULE__}.recv() 1 - :error #{inspect reason}")
         {:error, reason}
     after timeout ->
-      dbg("--- #{__MODULE__}.recv() 1 - :after timeout")
+      stqdbg("--- #{__MODULE__}.recv() 1 - :after timeout")
       Kernel.send(self(), {:error, :timeout})
       conn
     end
   end
 
   def recv(%Conn{socket: {:ssl, socket}, timeout: timeout} = conn, fun) do
-    dbg("--- #{__MODULE__}.recv() 2A")
+    stqdbg("--- #{__MODULE__}.recv() 2A")
     receive do
       {:xmlstreamelement, stanza} ->
-        dbg("--- #{__MODULE__}.recv() 2B")
+        stqdbg("--- #{__MODULE__}.recv() 2B")
         fun.(conn, stanza)
       {:ssl, ^socket, " "} ->
-        dbg("--- #{__MODULE__}.recv() 2C")
+        stqdbg("--- #{__MODULE__}.recv() 2C")
         :ok = activate({:ssl, socket})
         conn
       {:ssl, ^socket, data} ->
-        dbg("--- #{__MODULE__}.recv() 2D")
+        stqdbg("--- #{__MODULE__}.recv() 2D")
         :ok = activate({:ssl, socket})
 
         if whitespace_only?(data) do
-          dbg("--- #{__MODULE__}.recv() 2D Whitespace")
+          stqdbg("--- #{__MODULE__}.recv() 2D Whitespace")
           conn
         else
-          dbg("--- #{__MODULE__}.recv() 2D ELSE")
+          stqdbg("--- #{__MODULE__}.recv() 2D ELSE")
           {:ok, conn, stanza} = parse_data(conn, data)
           fun.(conn, stanza)
         end
       {:ssl_closed, ^socket} ->
-        dbg("--- #{__MODULE__}.recv() 2 - :ssl_closed")
+        stqdbg("--- #{__MODULE__}.recv() 2 - :ssl_closed")
         {:error, :closed}
       {:ssl_error, ^socket, reason} ->
-        dbg("--- #{__MODULE__}.recv() 2 - :ssl_closed")
+        stqdbg("--- #{__MODULE__}.recv() 2 - :ssl_closed")
         {:error, reason}
     after timeout ->
-      dbg("--- #{__MODULE__}.recv() 2 - after timeout")
+      stqdbg("--- #{__MODULE__}.recv() 2 - after timeout")
       Kernel.send(self(), {:error, :timeout})
       conn
     end
@@ -324,7 +324,7 @@ defmodule Romeo.Transports.TCP do
     Romeo.JID.parse(jid).server
   end
 
-  defp dbg(msg) do
-    IO.puts("--- [#{self()}]: #{msg}")
+  def stqdbg(msg) do
+    IO.puts("--- [#{inspect self()}]: #{inspect msg}")
   end
 end
